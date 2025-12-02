@@ -51,7 +51,7 @@ jobs:
         run: |
           echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
-            if mysql -h 127.0.0.1 -P 3306 -uroot -ppassword -e "SELECT 1;" >/dev/null 2>&1; then
+            if mysql -h 127.0.0.1 -P 3306 -u root -p password -e "SELECT 1;" >/dev/null 2>&1; then
               echo "MySQL is ready!"
               break
             fi
