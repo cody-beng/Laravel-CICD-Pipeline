@@ -1,0 +1,29 @@
+name: Laravel Docker CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy Docker container to server
+        run: |
+          ssh ubuntu@your_server_ip << 'EOF'
+            set -e
+            cd /var/www/laravel-app
+            git fetch origin main
+            git reset --hard origin/main
+            docker-compose build
+            docker-compose up -d
+          EOF
