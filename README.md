@@ -134,6 +134,124 @@ volumes:
   kreditinfo_data:
 ```
 
+### Create needed folders and configuration needed for the deployment
+- On your project folder run
+  ```bash
+  mkdir docker && cd docker && mkdir mysql && cd mysql && touch init.sql && sudo nano init.sql
+  ```
+  - paste the code below:
+    ```mysql
+    GRANT ALL PRIVILEGES ON *.* TO 'admin_up_training_user'@'%' IDENTIFIED BY 'password' WITH GRANT OPTION;
+    FLUSH PRIVILEGES;
+    ```
+  - To save, prese CTRL + X, then press Shift + Y, then press Enter
+  - CD to docker root folder, run the command
+    ```bash
+    mkdir php && cd php && touch uploads.ini && sudo nano uploads.ini
+    ```
+    - paste the code below:
+      ```php
+      upload_max_filesize = 1024M
+      post_max_size = 1024M
+      memory_limit = 2048M
+      expose_php = Off
+      ```
+  - CD to docker root folder, run the command
+    ```bash
+    mkdir nginx && cd nginx && touch Dockerfile && sudo nano Dockerfile
+    ```
+    - paste the code below:
+      ```Dockerfile
+        FROM nginx:alpine
+        # Create non-root user
+        RUN addgroup -g 1001 -S up_training_nginx && \
+            adduser -S up_training_nginx -u 1001 -G up_training_nginx
+        # Set permissions for logs and www
+        RUN mkdir -p /var/www/html \
+            && chown -R up_training_nginx:up_training_nginx /var/www/html /var/log/nginx /var/cache/nginx /var/run
+        # Copy configs
+        COPY nginx.conf /etc/nginx/nginx.conf
+        COPY default.conf /etc/nginx/conf.d/default.conf
+      ```
+  - On the nginx folder, run the command
+    ```bash
+    touch nginx.conf && sudo nano nginx.conf
+    ```
+    - paste the code below:
+      ```bash
+        user  up_training_nginx;
+        worker_processes  auto;
+
+        events {
+            worker_connections 1024;
+        }
+
+        http {
+            server_tokens off;
+            add_header Server "";
+            include /etc/nginx/mime.types;
+            sendfile        on;
+            keepalive_timeout  65;
+            include /etc/nginx/conf.d/*.conf;
+        }
+      ```
+  - On the nginx folder, run the command
+    ```bash
+    touch nginx.conf && sudo nano default.conf
+    ```
+    - paste the code below:
+      ```bash
+        server {
+            listen 80;
+            server_name _;
+
+            # --- SECURITY BLOCKS FIRST ---
+            # Block sensitive folders
+            location ~* /(app|vendor|storage|bootstrap|config|database|resources|routes|tests|node_modules|docker|data|stubs)/ {
+                deny all;
+                return 404;
+            }
+
+            # Block hidden files (.env, .git, etc.)
+            location ~ /\.(?!well-known).* {
+                deny all;
+            }
+
+            # Block PHP execution in uploads/storage
+            location ~* /(?:uploads|storage)/.*\.php$ {
+                deny all;
+            }
+
+            # Block /assets
+            location ~* ^/assets/ {
+                deny all;
+                return 404;
+            }
+
+            # Laravel application
+            location / {
+                try_files $uri $uri/ /index.php?$query_string;
+            }
+
+            # PHP-FPM for Laravel
+            location ~ \.php$ {
+                include fastcgi_params;
+                fastcgi_pass kreditinfo_app:9000;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param PATH_INFO $fastcgi_path_info;
+
+                # PHP errors (optional)
+                # remove this on production
+                fastcgi_param PHP_VALUE "display_errors=1 \n error_reporting=E_ALL";
+
+                fastcgi_buffers 16 16k;
+                fastcgi_buffer_size 32k;
+            }
+        }
+      ```
+
+
 ### Dockerhub
 - Signin to your dockerhub account. If you don't have an account yet, signup
 - Create a repository `up_training`
