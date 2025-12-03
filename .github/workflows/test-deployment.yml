@@ -121,14 +121,14 @@ jobs:
             # -------------------------------
             # 4. Restart Nginx if not running
             # -------------------------------
-            # NGINX_CONTAINER_NAME="up_training_nginx"
+            NGINX_CONTAINER_NAME="up_training_nginx"
 
-            # if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
-            #     echo ">> Nginx is not running. Starting nginx container..."
-            #     docker compose up -d nginx
-            # else
-            #     echo ">> Nginx is already running."
-            # fi
+            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+                echo ">> Nginx is not running. Starting nginx container..."
+                docker compose up -d nginx
+            else
+                echo ">> Nginx is already running."
+            fi
 
             echo ">> Deployment completed!"
           EOF
