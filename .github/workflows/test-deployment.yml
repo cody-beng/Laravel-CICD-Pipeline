@@ -111,15 +111,36 @@ jobs:
               echo ">> All required services are running."
             fi
 
+            # -------------------------------
+            # 4. Create .env from secrets
+            # -------------------------------
+            echo ">> Generating .env file..."
+            cat <<EOT > .env
+            DB_DATABASE=${DB_DATABASE}
+            DB_USERNAME=${DB_USERNAME}
+            DB_PASSWORD=${DB_PASSWORD}
+            APP_ENV=production
+            APP_KEY=${APP_KEY}
+            EOT
+
             # Run container
             docker run -d \
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
-              -v $(pwd)/.env:/var/www/html/.env \
               benjmasub/up_training:latest
 
-            docker compose up -d nginx
+            # -------------------------------
+            # 5. Restart Nginx if not running
+            # -------------------------------
+            NGINX_CONTAINER_NAME="up_training_nginx"
+
+            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+                echo ">> Nginx is not running. Starting nginx container..."
+                docker compose up -d nginx
+            else
+                echo ">> Nginx is already running."
+            fi
 
             echo ">> Deployment completed!"
           EOF
