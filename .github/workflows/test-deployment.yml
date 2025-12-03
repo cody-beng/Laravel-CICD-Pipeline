@@ -1,4 +1,4 @@
-name: Laravel Docker CI/CD
+name: UP Training Docker CI/CD
 
 on:
   push:
@@ -49,10 +49,10 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh ${{ secret.EC2_USER }}@${{ secret.EC2_HOST }} << 'EOF'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
 
-            PROJECT_DIR="/var/www/up_training"
+            PROJECT_DIR="up-training"
             REQUIRED_SERVICES=("php" "db" "phpmyadmin", "nginx")
 
             echo "🚀 Starting deployment..."

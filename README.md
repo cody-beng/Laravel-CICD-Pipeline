@@ -1,5 +1,19 @@
 ## **Github Actions with EC2 Instance**
 
+### Create EC2 instance
+- Login to AWS console, If you don't have account yet, signup and use the Free Tier
+- Create EC2 instance
+  - select "EC2" from home console
+  - on EC2 page, click "Lunch instance", then select "Lunch instance" from dropdown menu
+  - on lunch instance page, on "Name and tags" section, enter your instance name
+  - on "Application and OS Images" section, select "Ubuntu" or "Linux"
+  - check t2.micro if it is enough for you.
+  - on "Key pair (login)" section, click "Create new key pair"
+  - on key pair modal, enter your "Key pair name" then click "Create key pair" button. This will download your key pair so keep it somewhere safe in your laptop/PC
+  - on "Network settings" section, click "Select existing security group", then on "Common security groups" select "Linux-SG"
+  - on the bottom right corner click "Lunch instance"
+  - after successfully create lunch the instance from the success dialog
+
 ### Connect to EC2 instnce
 ```bash
 ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@ec2-[server_ip_address].ap-southeast-1.compute.amazonaws.com
@@ -127,6 +141,16 @@ volumes:
 
 
 ### Github Secrets
+- Go to project settings and go to `Secrets and variables` > `Actions`
+- Click `New repository secret`, create everything below are the needed in our CI/CD
+- Enter name DOCKER_USER and secrets -> secrets will your dockerhub username
+- Enter name EC2_HOST and secrets -> secrets will be your server user
+- Enter name SSH_TEST_PRIVATE_KEY and secrets -> secrets will be your private SSH key
+
+- **Note** - If you don't have the ssh key, go to your server and run the code below
+  ```bash
+  cd ~/.ssh && 
+  ```
 
 
 ### Github Actions
@@ -142,7 +166,6 @@ on:
   pull_request:
     branches:
       - develop
-      - main
 
 jobs:
   test:
@@ -218,7 +241,7 @@ jobs:
 - Copy and paste below
 
 ```yml
-name: Laravel Docker CI/CD
+name: UP Training Docker CI/CD
 
 on:
   push:
@@ -239,25 +262,25 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
 
       # ---------------------------------------------
       # 2. Build Docker image
       # ---------------------------------------------
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/laravel-app:latest .
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/laravel-app:latest \
-            ${{ secrets.DOCKERHUB_USERNAME }}/laravel-app:${{ github.sha }}
+          docker build -t ${{ secrets.DOCKER_USER }}/up_training:latest .
+          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest \
+            ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
       # 3. Push image to Docker Hub
       # ---------------------------------------------
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/laravel-app:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/laravel-app:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USER }}/up_training:latest
+          docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
       # 4. SSH into server and deploy
@@ -269,11 +292,11 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh server_username@your_test_server_ip << 'EOF'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
 
             PROJECT_DIR="up-training"
-            REQUIRED_SERVICES=("app" "db" "phpmyadmin")
+            REQUIRED_SERVICES=("php" "db" "phpmyadmin", "nginx")
 
             echo "🚀 Starting deployment..."
 
@@ -285,7 +308,13 @@ jobs:
               cd $PROJECT_DIR
 
               # Pull newest image
-              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/laravel-app:latest
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
+
+              docker run -d \
+                  --name up_training \
+                  --network up_training-network \
+                  -p 8000:8000 \
+                  ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
 
               # -------------------------------
               # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
@@ -307,27 +336,14 @@ jobs:
               # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
               # -------------------------------
               if [ "$RESTART_NEEDED" = true ]; then
-                echo "♻️ Restarting docker-compose because some services were missing..."
+                echo ">> Restarting docker-compose because some services were missing..."
                 docker-compose down
                 docker-compose up -d --force-recreate --remove-orphans
               else
                 echo "👍 All required services are running. No restart needed."
               fi
-
             else
-              # -------------------------------
-              # 4. PROJECT FOLDER DOES NOT EXIST
-              # -------------------------------
-              echo "❗ Project directory does NOT exist — creating and initializing..."
-
-              mkdir -p $PROJECT_DIR
-              cd $PROJECT_DIR
-
-              # Clone ONLY if needed
-              git clone https://github.com/your/repo.git .
-
-              echo "📦 Starting Docker containers for the first time..."
-              docker-compose up -d --build
+              echo "❌ Project directory does not exist: $PROJECT_DIR"
             fi
 
             echo "🎉 Deployment completed!"
