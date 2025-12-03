@@ -1,0 +1,2 @@
+GRANT ALL PRIVILEGES ON *.* TO 'admin_up_training_user'@'%' IDENTIFIED BY 'password' WITH GRANT OPTION;
+FLUSH PRIVILEGES;

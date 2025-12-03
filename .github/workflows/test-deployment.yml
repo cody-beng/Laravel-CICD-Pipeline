@@ -27,9 +27,8 @@ jobs:
       # ---------------------------------------------
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USER }}/up_training:latest .
-          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest \
-            ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+          echo ">> Building Docker image..."
+          docker compose -f docker-compose.prod.yml build
 
       # ---------------------------------------------
       # 3. Push image to Docker Hub
@@ -111,6 +110,8 @@ jobs:
               --network up-training_up_training_network \
               -p 9001:9000 \
               benjmasub/up_training:latest
+
+            docker compose up -d nginx
 
             echo ">> Deployment completed!"
           EOF
