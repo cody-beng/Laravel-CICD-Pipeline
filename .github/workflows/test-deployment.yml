@@ -116,7 +116,7 @@ jobs:
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
-              --env-file $HOME/up-training/.env \
+              --env-file .env \
               benjmasub/up_training:latest
 
             # -------------------------------
