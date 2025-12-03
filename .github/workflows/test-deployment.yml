@@ -68,13 +68,9 @@ jobs:
               docker pull ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
 
               docker run -d \
-                  --name laravel_app \
+                  --name up_training \
+                  --network up_training-network \
                   -p 8000:8000 \
-                  -e APP_ENV=production \
-                  -e DB_HOST=db \
-                  -e DB_DATABASE=laravel_prod \
-                  -e DB_USERNAME=root \
-                  -e DB_PASSWORD=password \
                   ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
 
               # -------------------------------
