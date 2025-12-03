@@ -111,6 +111,8 @@ jobs:
               echo ">> All required services are running."
             fi
 
+            echo "${{ secrets.ENV_VARIABLES }}" > .env
+
             # Run container
             docker run -d \
               --name up_training \
