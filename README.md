@@ -138,6 +138,20 @@ volumes:
   kreditinfo_data:
 ```
 
+### Create `.env` on the project root directory
+```bash
+touch .env && sudo nano .env
+```
+- copy and paste the environment variables. Your laravel important environment variable must goes here
+  ```text
+  DB_CONNECTION=mysql
+  DB_HOST=db
+  DB_PORT=3306
+  DB_DATABASE=up_training
+  DB_USERNAME=admin_up_training_user
+  DB_PASSWORD=UP_trAining
+  ```
+
 ### Create needed folders and configuration needed for the deployment
 - On your project folder run
   ```bash
@@ -404,9 +418,15 @@ jobs:
       # ---------------------------------------------
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USER }}/up_training:latest .
-          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest \
-            ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+          echo ">> Building Docker image..."
+          docker compose -f docker-compose.prod.yml build
+
+      # -------------------------------
+      # 4. Tag Docker image with Git SHA
+      # -------------------------------
+      - name: Tag Docker image
+        run: |
+          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
 
       # ---------------------------------------------
       # 3. Push image to Docker Hub
@@ -433,6 +453,10 @@ jobs:
             echo "${{ secrets.EC2_HOST }} already in known_hosts, skipping..."
           fi
 
+      - name: Create .env file from single secret
+        run: |
+          echo "${{ secrets.ENV_VARIABLES }}" > .env
+
       - name: Deploy to Server
         run: |
           ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
@@ -451,7 +475,7 @@ jobs:
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
-            docker pull your_docker_username/repository_name:latest
+            docker pull benjmasub/up_training:latest
 
             # Remove existing container if it exists
             docker rm -f up_training || true
@@ -476,8 +500,8 @@ jobs:
             # -------------------------------
             if [ "\$RESTART_NEEDED" = true ]; then
               echo ">> Restarting docker-compose because some services were missing..."
-              docker-compose down || true
-              docker-compose up -d --force-recreate --remove-orphans
+              docker compose down || true
+              docker compose up -d --force-recreate --remove-orphans
             else
               echo ">> All required services are running."
             fi
@@ -485,11 +509,23 @@ jobs:
             # Run container
             docker run -d \
               --name up_training \
-              --network up_training_network \
-              -p 8000:8000 \
-              your_docker_username/repository_name:latest
+              --network up-training_up_training_network \
+              -p 9001:9000 \
+              --env-file .env \
+              benjmasub/up_training:latest
+
+            # -------------------------------
+            # 4. Restart Nginx if not running
+            # -------------------------------
+            NGINX_CONTAINER_NAME="up_training_nginx"
+
+            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+                echo ">> Nginx is not running. Starting nginx container..."
+                docker compose up -d nginx
+            else
+                echo ">> Nginx is already running."
+            fi
 
             echo ">> Deployment completed!"
           EOF
-
 ```
