@@ -145,10 +145,21 @@ volumes:
   ```
   - paste the code below:
     ```mysql
-    GRANT ALL PRIVILEGES ON *.* TO 'admin_up_training_user'@'%' IDENTIFIED BY 'password' WITH GRANT OPTION;
+    GRANT ALL PRIVILEGES ON *.* TO 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining' WITH GRANT OPTION;
     FLUSH PRIVILEGES;
     ```
   - To save, prese CTRL + X, then press Shift + Y, then press Enter
+  - create .env file inside mysql folder
+    ```bash
+    touch .env && sudo nano .env
+    ```
+    - paste the env below:
+      ```text
+      MYSQL_DATABASE=up_training
+      MYSQL_USER=admin_up_training_user
+      MYSQL_PASSWORD=UP_trAining
+      MYSQL_ROOT_PASSWORD=UP_trAining
+      ```
   - CD to docker root folder, run the command
     ```bash
     mkdir php && cd php && touch uploads.ini && sudo nano uploads.ini
