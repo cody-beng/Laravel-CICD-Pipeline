@@ -53,10 +53,10 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
           ssh ${{ secrets.EC2_PROD_USER }}@${{ secrets.EC2_PROD_HOST }} << EOF
             set -e
 
+            IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
             PROJECT_DIR="up-training"
             REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
 
