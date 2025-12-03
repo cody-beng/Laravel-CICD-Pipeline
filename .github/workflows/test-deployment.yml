@@ -116,6 +116,7 @@ jobs:
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
+              -v $(pwd)/.env:/var/www/html/.env \
               benjmasub/up_training:latest
 
             docker compose up -d nginx
