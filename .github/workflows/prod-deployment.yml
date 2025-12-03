@@ -15,11 +15,11 @@ jobs:
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ secrets.SSH_PROD_PRIVATE_KEY }}
 
       - name: Deploy Docker container to server
         run: |
-          ssh ubuntu@your_server_ip << 'EOF'
+          ssh server_username@your_prod_server_ip << 'EOF'
             set -e
             cd /var/www/laravel-app
             git fetch origin main
