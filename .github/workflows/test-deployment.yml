@@ -99,8 +99,8 @@ jobs:
             # -------------------------------
             if [ "\$RESTART_NEEDED" = true ]; then
               echo ">> Restarting docker-compose because some services were missing..."
-              docker-compose down || true
-              docker-compose up -d --force-recreate --remove-orphans
+              docker compose down || true
+              docker compose up -d --force-recreate --remove-orphans
             else
               echo ">> All required services are running."
             fi
