@@ -8,22 +8,105 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # ---------------------------------------------
+      # 1. Login to Docker Hub
+      # ---------------------------------------------
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      # ---------------------------------------------
+      # 2. Build Docker image
+      # ---------------------------------------------
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USER }}/up_training:latest .
+          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest \
+            ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+
+      # ---------------------------------------------
+      # 3. Push image to Docker Hub
+      # ---------------------------------------------
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USER }}/up_training:latest
+          docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+
+      # ---------------------------------------------
+      # 4. SSH into server and deploy
+      # ---------------------------------------------
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.SSH_TEST_PRIVATE_KEY }}
 
-      - name: Deploy Docker container to server
+      - name: Deploy to Server
         run: |
-          ssh server_username@your_test_server_ip << 'EOF'
+          ssh ${{ secret.EC2_USER }}@${{ secret.EC2_HOST }} << 'EOF'
             set -e
-            cd /var/www/laravel-app
-            git fetch origin develop
-            git reset --hard origin/develop
-            docker-compose build
-            docker-compose up -d
+
+            PROJECT_DIR="/var/www/up_training"
+            REQUIRED_SERVICES=("php" "db" "phpmyadmin", "nginx")
+
+            echo "🚀 Starting deployment..."
+
+            # -------------------------------
+            # 1. CHECK IF PROJECT FOLDER EXISTS
+            # -------------------------------
+            if [ -d "$PROJECT_DIR" ]; then
+              echo "📁 Project directory exists: $PROJECT_DIR"
+              cd $PROJECT_DIR
+
+              # Pull newest image
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
+
+              docker run -d \
+                  --name laravel_app \
+                  -p 8000:8000 \
+                  -e APP_ENV=production \
+                  -e DB_HOST=db \
+                  -e DB_DATABASE=laravel_prod \
+                  -e DB_USERNAME=root \
+                  -e DB_PASSWORD=password \
+                  ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
+
+              # -------------------------------
+              # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
+              # -------------------------------
+              echo "🔍 Checking required Docker services..."
+
+              RESTART_NEEDED=false
+
+              for SERVICE in "${REQUIRED_SERVICES[@]}"; do
+                if ! docker ps --format '{{.Names}}' | grep -q "$SERVICE"; then
+                  echo "❌ Missing service: $SERVICE"
+                  RESTART_NEEDED=true
+                else
+                  echo "✅ $SERVICE is running"
+                fi
+              done
+
+              # -------------------------------
+              # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
+              # -------------------------------
+              if [ "$RESTART_NEEDED" = true ]; then
+                echo ">> Restarting docker-compose because some services were missing..."
+                docker-compose down
+                docker-compose up -d --force-recreate --remove-orphans
+              else
+                echo "👍 All required services are running. No restart needed."
+              fi
+            else
+              echo "❌ Project directory does not exist: $PROJECT_DIR"
+            fi
+
+            echo "🎉 Deployment completed!"
           EOF
+
