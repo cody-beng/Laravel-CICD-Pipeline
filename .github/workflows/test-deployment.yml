@@ -108,8 +108,8 @@ jobs:
             # Run container
             docker run -d \
               --name up_training \
-              --network up_training_network \
-              -p 8001:8000 \
+              --network up-training_up_training_network \
+              -p 9001:9000 \
               benjmasub/up_training:latest
 
             echo ">> Deployment completed!"
