@@ -16,34 +16,34 @@ jobs:
       # ---------------------------------------------
       # 1. Login to Docker Hub
       # ---------------------------------------------
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKERHUB_PASS }}
+      # - name: Login to DockerHub
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKER_USER }}
+      #     password: ${{ secrets.DOCKERHUB_PASS }}
 
       # ---------------------------------------------
       # 2. Build Docker image
       # ---------------------------------------------
-      - name: Build Docker image
-        run: |
-          echo ">> Building Docker image..."
-          docker compose -f docker-compose.prod.yml build
+      # - name: Build Docker image
+      #   run: |
+      #     echo ">> Building Docker image..."
+      #     docker compose -f docker-compose.prod.yml build
 
       # -------------------------------
       # 4. Tag Docker image with Git SHA
       # -------------------------------
-      - name: Tag Docker image
-        run: |
-          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
+      # - name: Tag Docker image
+      #   run: |
+      #     docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
 
       # ---------------------------------------------
       # 3. Push image to Docker Hub
       # ---------------------------------------------
-      - name: Push Docker image
-        run: |
-          docker push ${{ secrets.DOCKER_USER }}/up_training:latest
-          docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+      # - name: Push Docker image
+      #   run: |
+      #     docker push ${{ secrets.DOCKER_USER }}/up_training:latest
+      #     docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
       # 4. SSH into server and deploy
@@ -115,12 +115,12 @@ jobs:
             # 4. Create .env from secrets
             # -------------------------------
             echo ">> Generating .env file..."
-            cat <<EOT > .env
-            DB_DATABASE=${DB_DATABASE}
-            DB_USERNAME=${DB_USERNAME}
-            DB_PASSWORD=${DB_PASSWORD}
-            APP_ENV=production
-            APP_KEY=${APP_KEY}
+            cat <<-EOT > .env
+              DB_DATABASE=${DB_DATABASE}
+              DB_USERNAME=${DB_USERNAME}
+              DB_PASSWORD=${DB_PASSWORD}
+              APP_ENV=production
+              APP_KEY=${APP_KEY}
             EOT
 
             # Run container
