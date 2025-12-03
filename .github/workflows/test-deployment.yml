@@ -70,7 +70,7 @@ jobs:
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
-            docker pull \$IMAGE
+            docker pull $IMAGE
 
             # Remove existing container if it exists
             docker rm -f up_training || true
@@ -80,7 +80,7 @@ jobs:
               --name up_training \
               --network up_training-network \
               -p 8000:8000 \
-              \$IMAGE
+              $IMAGE
 
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
