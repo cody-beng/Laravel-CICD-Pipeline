@@ -4,6 +4,7 @@
 FROM php:8.2-fpm AS base
 
 # Install system dependencies
+# If some of these packages are not needed, feel free to remove them to slim down the image
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpng-dev \
