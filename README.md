@@ -297,8 +297,22 @@ touch .env && sudo nano .env
 
 - **Note** - If you don't have the ssh key, go to your server and run the code below
   ```bash
-  cd ~/.ssh && 
+  cd ~/.ssh
+  ssh-keygen -t ed25519 -C "your_email@example.com"
+  cat id_ed25519.pub
   ```
+  - copy the public key and add it to the `~/.ssh/authorized_keys`
+    ```bash
+    echo "PASTE_YOUR_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
+    ```
+  - if you cannot add, change the permission
+    ```bash
+    chmod 600 ~/.ssh/authorized_keys
+    ```
+  - copy your private key and add it to your github secrets `SSH_TEST_PRIVATE_KEY`
+    ```bash
+    cat id_ed25519
+    ```
 
 
 ### Github Actions
@@ -529,3 +543,26 @@ jobs:
             echo ">> Deployment completed!"
           EOF
 ```
+
+
+- ### **Note**: If your laravel app cannot connect to database run:
+  ```bash
+  docker exec -it up_training_db bash
+  mysql -u root -p # enter UP_trAining or use root if not allowed
+  ```
+  - create the user `admin_up_training_user`
+    ```bash
+    CREATE USER 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining';
+    ```
+  - if cannot create it may already exists
+    ```bash
+    ALTER USER 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining';
+    ```
+  - grant privilege to user `admin_up_training_user`
+    ```bash
+    GRANT ALL PRIVILEGES ON up_training.* TO 'admin_up_training_user'@'%';
+    ```
+  - then flush privilege
+    ```bash
+    FLUSH PRIVILEGES;
+    ```
