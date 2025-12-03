@@ -53,60 +53,62 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
 
             PROJECT_DIR="up-training"
             REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
 
-            echo "🚀 Starting deployment..."
+            echo ">> Starting deployment..."
 
             # -------------------------------
             # 1. CHECK IF PROJECT FOLDER EXISTS
             # -------------------------------
-            if [ -d "$PROJECT_DIR" ]; then
-              echo "📁 Project directory exists: $PROJECT_DIR"
-              cd $PROJECT_DIR
+            mkdir -p \$PROJECT_DIR
+            cd \$PROJECT_DIR
 
-              # Pull newest image
-              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
+            # Pull newest image
+            echo ">> Pulling latest Docker image..."
+            docker pull \$IMAGE
 
-              docker run -d \
-                  --name up_training \
-                  --network up_training-network \
-                  -p 8000:8000 \
-                  ${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
+            # Remove existing container if it exists
+            docker rm -f up_training || true
 
-              # -------------------------------
-              # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
-              # -------------------------------
-              echo "🔍 Checking required Docker services..."
+            # Run container
+            docker run -d \
+              --name up_training \
+              --network up_training-network \
+              -p 8000:8000 \
+              \$IMAGE
 
-              RESTART_NEEDED=false
+            # -------------------------------
+            # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
+            # -------------------------------
+            echo "🔍 Checking required Docker services..."
+            RESTART_NEEDED=false
 
-              for SERVICE in "${REQUIRED_SERVICES[@]}"; do
-                if ! docker ps --format '{{.Names}}' | grep -q "$SERVICE"; then
-                  echo "❌ Missing service: $SERVICE"
-                  RESTART_NEEDED=true
-                else
-                  echo "✅ $SERVICE is running"
-                fi
-              done
-
-              # -------------------------------
-              # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
-              # -------------------------------
-              if [ "$RESTART_NEEDED" = true ]; then
-                echo ">> Restarting docker-compose because some services were missing..."
-                docker-compose down
-                docker-compose up -d --force-recreate --remove-orphans
+            for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
+              if ! docker ps --format '{{.Names}}' | grep -q "\$SERVICE"; then
+                echo ">> Missing service: \$SERVICE"
+                RESTART_NEEDED=true
               else
-                echo "👍 All required services are running. No restart needed."
+                echo ">> \$SERVICE is running"
               fi
+            done
+
+            # -------------------------------
+            # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
+            # -------------------------------
+            if [ "\$RESTART_NEEDED" = true ]; then
+              echo ">> Restarting docker-compose because some services were missing..."
+              docker-compose down || true
+              docker-compose up -d --force-recreate --remove-orphans
             else
-              echo "❌ Project directory does not exist: $PROJECT_DIR"
+              echo ">> All required services are running."
             fi
 
-            echo "🎉 Deployment completed!"
+            echo ">> Deployment completed!"
           EOF
+
 
