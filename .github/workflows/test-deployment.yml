@@ -60,7 +60,7 @@ jobs:
             PROJECT_DIR="up-training"
             REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
 
-            echo "🚀 Starting deployment..."
+            echo ">> Starting deployment..."
 
             # -------------------------------
             # 1. CHECK IF PROJECT FOLDER EXISTS
@@ -69,7 +69,7 @@ jobs:
             cd \$PROJECT_DIR
 
             # Pull newest image
-            echo "📦 Pulling latest Docker image..."
+            echo ">> Pulling latest Docker image..."
             docker pull \$IMAGE
 
             # Remove existing container if it exists
@@ -90,10 +90,10 @@ jobs:
 
             for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
               if ! docker ps --format '{{.Names}}' | grep -q "\$SERVICE"; then
-                echo "❌ Missing service: \$SERVICE"
+                echo ">> Missing service: \$SERVICE"
                 RESTART_NEEDED=true
               else
-                echo "✅ \$SERVICE is running"
+                echo ">> \$SERVICE is running"
               fi
             done
 
@@ -101,14 +101,14 @@ jobs:
             # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
             # -------------------------------
             if [ "\$RESTART_NEEDED" = true ]; then
-              echo "♻️ Restarting docker-compose because some services were missing..."
+              echo ">> Restarting docker-compose because some services were missing..."
               docker-compose down || true
               docker-compose up -d --force-recreate --remove-orphans
             else
-              echo "👍 All required services are running."
+              echo ">> All required services are running."
             fi
 
-            echo "🎉 Deployment completed!"
-      EOF
+            echo ">> Deployment completed!"
+          EOF
 
 
