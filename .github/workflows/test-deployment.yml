@@ -116,7 +116,7 @@ jobs:
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
-              --env-file /home/${EC2_USER}/up-training/.env \
+              --env-file $HOME/up-training/.env \
               benjmasub/up_training:latest
 
             # -------------------------------
@@ -133,5 +133,3 @@ jobs:
 
             echo ">> Deployment completed!"
           EOF
-
-
