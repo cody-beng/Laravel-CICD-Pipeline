@@ -79,13 +79,6 @@ jobs:
             # Remove existing container if it exists
             docker rm -f up_training || true
 
-            # Run container
-            docker run -d \
-              --name up_training \
-              --network up_training_network \
-              -p 8000:8000 \
-              benjmasub/up_training:latest
-
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
             # -------------------------------
@@ -111,6 +104,13 @@ jobs:
             else
               echo ">> All required services are running."
             fi
+
+            # Run container
+            docker run -d \
+              --name up_training \
+              --network up_training_network \
+              -p 8000:8000 \
+              benjmasub/up_training:latest
 
             echo ">> Deployment completed!"
           EOF
