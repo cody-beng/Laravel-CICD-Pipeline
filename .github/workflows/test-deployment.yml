@@ -53,7 +53,7 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
 
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/up_training:latest
