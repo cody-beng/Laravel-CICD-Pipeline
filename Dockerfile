@@ -74,9 +74,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 EXPOSE 9000
 
 ENTRYPOINT ["entrypoint.sh"]
-
-# Run php-fpm for dev
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["php-fpm"]
 
 # =============================
 # 3. Production Stage
@@ -106,5 +104,4 @@ RUN touch /var/log/cron.log && chmod 666 /var/log/cron.log
 EXPOSE 9000
 
 ENTRYPOINT ["entrypoint.sh"]
-
 CMD ["php-fpm"]
