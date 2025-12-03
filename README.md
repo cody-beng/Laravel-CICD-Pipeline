@@ -435,17 +435,10 @@ jobs:
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
-            docker pull benjmasub/up_training:latest
+            docker pull your_docker_username/repository_name:latest
 
             # Remove existing container if it exists
             docker rm -f up_training || true
-
-            # Run container
-            docker run -d \
-              --name up_training \
-              --network up_training_network \
-              -p 8000:8000 \
-              benjmasub/up_training:latest
 
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
@@ -472,6 +465,13 @@ jobs:
             else
               echo ">> All required services are running."
             fi
+
+            # Run container
+            docker run -d \
+              --name up_training \
+              --network up_training_network \
+              -p 8000:8000 \
+              your_docker_username/repository_name:latest
 
             echo ">> Deployment completed!"
           EOF
