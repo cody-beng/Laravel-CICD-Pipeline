@@ -30,6 +30,13 @@ jobs:
           echo ">> Building Docker image..."
           docker compose -f docker-compose.prod.yml build
 
+      # -------------------------------
+      # 4. Tag Docker image with Git SHA
+      # -------------------------------
+      - name: Tag Docker image
+        run: |
+          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
+
       # ---------------------------------------------
       # 3. Push image to Docker Hub
       # ---------------------------------------------
