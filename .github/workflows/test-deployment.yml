@@ -77,7 +77,7 @@ jobs:
             # Run container
             docker run -d \
               --name up_training \
-              --network up_training-network \
+              --network up_training_network \
               -p 8000:8000 \
               benjmasub/up_training:latest
 
