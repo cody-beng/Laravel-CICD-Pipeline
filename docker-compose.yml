@@ -13,7 +13,6 @@ services:
       - up_training_network
     depends_on:
       - db
-      - minio
 
   web:
     build:
