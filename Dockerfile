@@ -90,7 +90,7 @@ RUN apt-get update && apt-get install -y cron supervisor && apt-get clean
 COPY --from=build /var/www/html /var/www/html
 
 # Copy example .env as actual .env
-COPY .env.production.example /var/www/html/.env
+COPY .env.example /var/www/html/.env
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
