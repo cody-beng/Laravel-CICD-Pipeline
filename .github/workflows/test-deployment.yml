@@ -49,7 +49,12 @@ jobs:
 
       - name: Add server to known_hosts
         run: |
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          if ! ssh-keygen -F ${{ secrets.EC2_HOST }} > /dev/null; then
+            echo "Adding ${{ secrets.EC2_HOST }} to known_hosts..."
+            ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          else
+            echo "${{ secrets.EC2_HOST }} already in known_hosts, skipping..."
+          fi
 
       - name: Deploy to Server
         run: |
@@ -77,7 +82,7 @@ jobs:
             # Run container
             docker run -d \
               --name up_training \
-              --network up_training-network \
+              --network up_training_network \
               -p 8000:8000 \
               benjmasub/up_training:latest
 
