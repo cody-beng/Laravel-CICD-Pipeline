@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    image: up_training_app:latest
+    container_name: up_training_app
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+    environment:
+      - APP_ENV=production

@@ -112,6 +112,8 @@ jobs:
               -p 9001:9000 \
               benjmasub/up_training:latest
 
+            docker compose up -d nginx
+
             echo ">> Deployment completed!"
           EOF
 
