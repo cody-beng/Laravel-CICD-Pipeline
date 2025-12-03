@@ -92,9 +92,6 @@ COPY --from=build /var/www/html /var/www/html
 # Copy example .env as actual .env
 COPY .env.production.example /var/www/html/.env
 
-# Copy supervisor configuration
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
