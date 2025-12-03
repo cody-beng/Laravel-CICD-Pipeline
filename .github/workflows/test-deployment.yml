@@ -111,18 +111,6 @@ jobs:
               echo ">> All required services are running."
             fi
 
-            # -------------------------------
-            # 4. Create .env from secrets
-            # -------------------------------
-            echo ">> Generating .env file..."
-            cat <<-EOT > .env
-              DB_DATABASE=${DB_DATABASE}
-              DB_USERNAME=${DB_USERNAME}
-              DB_PASSWORD=${DB_PASSWORD}
-              APP_ENV=production
-              APP_KEY=${APP_KEY}
-            EOT
-
             # Run container
             docker run -d \
               --name up_training \
@@ -131,7 +119,7 @@ jobs:
               benjmasub/up_training:latest
 
             # -------------------------------
-            # 5. Restart Nginx if not running
+            # 4. Restart Nginx if not running
             # -------------------------------
             NGINX_CONTAINER_NAME="up_training_nginx"
 
