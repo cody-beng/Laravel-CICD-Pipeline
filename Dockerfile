@@ -82,9 +82,6 @@ CMD ["php-fpm"]
 # =============================
 FROM base AS prod
 
-# Install cron + supervisor
-RUN apt-get update && apt-get install -y cron supervisor && apt-get clean
-
 # Copy built application from build stage
 COPY --from=build /var/www/html /var/www/html
 
@@ -98,9 +95,6 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 # Copy entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Cron log
-RUN touch /var/log/cron.log && chmod 666 /var/log/cron.log
 
 EXPOSE 9000
 

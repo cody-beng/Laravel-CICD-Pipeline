@@ -145,7 +145,8 @@ volumes:
   ```
   - paste the code below:
     ```mysql
-    GRANT ALL PRIVILEGES ON *.* TO 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining' WITH GRANT OPTION;
+    CREATE USER IF NOT EXISTS 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining';
+    GRANT ALL PRIVILEGES ON up_training.* TO 'admin_up_training_user'@'%';
     FLUSH PRIVILEGES;
     ```
   - To save, prese CTRL + X, then press Shift + Y, then press Enter
