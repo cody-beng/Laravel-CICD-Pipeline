@@ -1,10 +1,10 @@
 services:
-  app:
+  up_training:
     build:
       context: .
       dockerfile: Dockerfile
       target: prod
-    image: benjmasub/up_training_app:latest
+    image: benjmasub/up_training:latest
     container_name: up_training_app
     restart: unless-stopped
     volumes:
