@@ -1,5 +1,7 @@
 ## **Github Actions with EC2 Instance**
 
+<img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/54e3de36-1215-4ca1-8281-16036c8c269c" />
+
 ### Create EC2 instance
 - Login to AWS console, If you don't have account yet, signup and use the Free Tier
 - Create EC2 instance
