@@ -420,14 +420,14 @@ jobs:
           docker compose -f docker-compose.prod.yml build
 
       # -------------------------------
-      # 4. Tag Docker image with Git SHA
+      # 3. Tag Docker image with Git SHA
       # -------------------------------
       - name: Tag Docker image
         run: |
           docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
 
       # ---------------------------------------------
-      # 3. Push image to Docker Hub
+      # 4. Push image to Docker Hub
       # ---------------------------------------------
       - name: Push Docker image
         run: |
@@ -435,7 +435,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
-      # 4. SSH into server and deploy
+      # 5. SSH into server and deploy
       # ---------------------------------------------
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
@@ -586,14 +586,14 @@ jobs:
           docker compose -f docker-compose.prod.yml build
 
       # -------------------------------
-      # 4. Tag Docker image with Git SHA
+      # 3. Tag Docker image with Git SHA
       # -------------------------------
       - name: Tag Docker image
         run: |
           docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
 
       # ---------------------------------------------
-      # 3. Push image to Docker Hub
+      # 4. Push image to Docker Hub
       # ---------------------------------------------
       - name: Push Docker image
         run: |
@@ -601,7 +601,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
-      # 4. SSH into server and deploy
+      # 5. SSH into server and deploy
       # ---------------------------------------------
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
