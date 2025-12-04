@@ -448,15 +448,11 @@ jobs:
       - name: Add server to known_hosts
         run: |
           if ! ssh-keygen -F ${{ secrets.EC2_HOST }} > /dev/null; then
-            echo "Adding ${{ secrets.EC2_HOST }} to known_hosts..."
+            echo ">> Adding to known_hosts..."
             ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
           else
-            echo "${{ secrets.EC2_HOST }} already in known_hosts, skipping..."
+            echo ">> Already in known_hosts, skipping..."
           fi
-
-      - name: Create .env file from single secret
-        run: |
-          echo "${{ secrets.ENV_VARIABLES }}" > .env
 
       - name: Deploy to Server
         run: |
@@ -484,7 +480,7 @@ jobs:
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
             # -------------------------------
-            echo "🔍 Checking required Docker services..."
+            echo ">> Checking required Docker services..."
             RESTART_NEEDED=false
 
             for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
@@ -614,10 +610,10 @@ jobs:
       - name: Add server to known_hosts
         run: |
           if ! ssh-keygen -F ${{ secrets.EC2_PROD_HOST }} > /dev/null; then
-            echo "Adding ${{ secrets.EC2_PROD_HOST }} to known_hosts..."
+            echo ">> Adding to known_hosts..."
             ssh-keyscan -H ${{ secrets.EC2_PROD_HOST }} >> ~/.ssh/known_hosts
           else
-            echo "${{ secrets.EC2_PROD_HOST }} already in known_hosts, skipping..."
+            echo ">> Already in known_hosts, skipping..."
           fi
 
       - name: Deploy to Server
@@ -646,7 +642,7 @@ jobs:
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
             # -------------------------------
-            echo "🔍 Checking required Docker services..."
+            echo ">> Checking required Docker services..."
             RESTART_NEEDED=false
 
             for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
