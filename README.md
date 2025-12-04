@@ -72,8 +72,9 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
     ports:
-      - "80:80"
-      - "443:443"
+      - "8000:80" # for laravel port
+      #-"80:80" # uncomment this if you want the laravel app to be accessable via port 80
+      #- "443:443" # uncomment this if you have SSL installed
     container_name: up_training_nginx
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -383,7 +384,7 @@ jobs:
 
 ```
 
-### Note: The reason we all this is to run the application test. To ensure that code is has no errors/bug before merging to the target branch
+### Note: The reason for this `pull-request.yml` is to test the application to ensure that the code being pushed has no errors/bug before merging to the target branch
 
 - Create `test-deployment.yml`. You can utilize this deployment for your production deployment.
 - Copy and paste below
