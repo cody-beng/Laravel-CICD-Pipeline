@@ -18,6 +18,7 @@
 ```bash
 ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@ec2-[server_ip_address].ap-southeast-1.compute.amazonaws.com
 ```
+- ### **Note**: `ap-southeast-1` might differ from the region where your server is located.
 
 ### Install docker
 ```bash
