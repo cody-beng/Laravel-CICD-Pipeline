@@ -4,7 +4,7 @@
 - Login to AWS console, If you don't have account yet, signup and use the Free Tier
 - Create EC2 instance
   - select "EC2" from home console
-  - on EC2 page, click "Launch instance", then select "Lunch instance" from dropdown menu
+  - on EC2 page, click "Launch instance", then select "Launch instance" from dropdown menu
   - on lunch instance page, on "Name and tags" section, enter your instance name
   - on "Application and OS Images" section, select "Ubuntu" or "Linux"
   - check t2.micro if it is enough for you.
