@@ -1,4 +1,4 @@
-name: UP Training Docker CI/CD
+name: UP Training Docker Test Deployment
 
 on:
   push:
