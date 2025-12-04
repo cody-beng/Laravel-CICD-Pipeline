@@ -1,59 +1,568 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## **Github Actions with EC2 Instance**
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### Create EC2 instance
+- Login to AWS console, If you don't have account yet, signup and use the Free Tier
+- Create EC2 instance
+  - select "EC2" from home console
+  - on EC2 page, click "Lunch instance", then select "Lunch instance" from dropdown menu
+  - on lunch instance page, on "Name and tags" section, enter your instance name
+  - on "Application and OS Images" section, select "Ubuntu" or "Linux"
+  - check t2.micro if it is enough for you.
+  - on "Key pair (login)" section, click "Create new key pair"
+  - on key pair modal, enter your "Key pair name" then click "Create key pair" button. This will download your key pair so keep it somewhere safe in your laptop/PC
+  - on "Network settings" section, click "Select existing security group", then on "Common security groups" select "Linux-SG"
+  - on the bottom right corner click "Lunch instance"
+  - after successfully create lunch the instance from the success dialog
 
-## About Laravel
+### Connect to EC2 instnce
+```bash
+ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@ec2-[server_ip_address].ap-southeast-1.compute.amazonaws.com
+```
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Install docker
+```bash
+sudo dnf update -y && sudo dnf install -y docker
+sudo mkdir -p /usr/libexec/docker/cli-plugins
+sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
+  -o /usr/libexec/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Start and enable docker
+```bash
+sudo systemctl start docker && sudo systemctl enable docker
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Test your docker
+```bash
+docker ps
 
-## Learning Laravel
+# you should see something like this
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- Note: If you cannot run docker ps, run the command below
+```bash
+sudo usermod -aG docker $USER
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Let's create a project folder
+```bash
+sudo mkdir up-training
+```
 
-## Laravel Sponsors
+### CD to your project folder and create `docker-compose.yml`
+```bash
+cd up-training && touch docker-compose.yml
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Edit `docker-compose.yml` and paste the code below
+```bash
+sudo nano docker-compose.yml
+```
 
-### Premium Partners
+`docker-compose.yml`
+```Dockerfile
+services:
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    container_name: kreditinfo_nginx
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./public:/var/www/html
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    networks:
+      - up_training_network
+    depends_on:
+      - php
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+  php:
+    image: php:8.2-fpm
+    container_name: kreditinfo_php
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    networks:
+      - up_training_network
 
-## Contributing
+  db:
+    image: mysql:8.0
+    container_name: kreditinfo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${adm1n_krEditInfo}
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - kreditinfo_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - up_training_network
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: kreditinfo_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: 512M
+    networks:
+      - up_training_network
+    depends_on:
+      - db
 
-## Code of Conduct
+networks:
+  up_training_network:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+volumes:
+  kreditinfo_data:
+```
 
-## Security Vulnerabilities
+### Create `.env` on the project root directory
+```bash
+touch .env && sudo nano .env
+```
+- copy and paste the environment variables. Your laravel important environment variable must goes here
+  ```text
+  DB_CONNECTION=mysql
+  DB_HOST=db
+  DB_PORT=3306
+  DB_DATABASE=up_training
+  DB_USERNAME=admin_up_training_user
+  DB_PASSWORD=UP_trAining
+  ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Create needed folders and configuration needed for the deployment
+- On your project folder run
+  ```bash
+  mkdir docker && cd docker && mkdir mysql && cd mysql && touch init.sql && sudo nano init.sql
+  ```
+  - paste the code below:
+    ```mysql
+    CREATE USER IF NOT EXISTS 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining';
+    GRANT ALL PRIVILEGES ON up_training.* TO 'admin_up_training_user'@'%';
+    FLUSH PRIVILEGES;
+    ```
+  - To save, prese CTRL + X, then press Shift + Y, then press Enter
+  - create .env file inside mysql folder
+    ```bash
+    touch .env && sudo nano .env
+    ```
+    - paste the env below:
+      ```text
+      MYSQL_DATABASE=up_training
+      MYSQL_USER=admin_up_training_user
+      MYSQL_PASSWORD=UP_trAining
+      MYSQL_ROOT_PASSWORD=UP_trAining
+      ```
+  - CD to docker root folder, run the command
+    ```bash
+    mkdir php && cd php && touch uploads.ini && sudo nano uploads.ini
+    ```
+    - paste the code below:
+      ```php
+      upload_max_filesize = 1024M
+      post_max_size = 1024M
+      memory_limit = 2048M
+      expose_php = Off
+      ```
+  - CD to docker root folder, run the command
+    ```bash
+    mkdir nginx && cd nginx && touch Dockerfile && sudo nano Dockerfile
+    ```
+    - paste the code below:
+      ```Dockerfile
+        FROM nginx:alpine
+        # Create non-root user
+        RUN addgroup -g 1001 -S up_training_nginx && \
+            adduser -S up_training_nginx -u 1001 -G up_training_nginx
+        # Set permissions for logs and www
+        RUN mkdir -p /var/www/html \
+            && chown -R up_training_nginx:up_training_nginx /var/www/html /var/log/nginx /var/cache/nginx /var/run
+        # Copy configs
+        COPY nginx.conf /etc/nginx/nginx.conf
+        COPY default.conf /etc/nginx/conf.d/default.conf
+      ```
+  - On the nginx folder, run the command
+    ```bash
+    touch nginx.conf && sudo nano nginx.conf
+    ```
+    - paste the code below:
+      ```bash
+        user  up_training_nginx;
+        worker_processes  auto;
 
-## License
+        events {
+            worker_connections 1024;
+        }
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+        http {
+            server_tokens off;
+            add_header Server "";
+            include /etc/nginx/mime.types;
+            sendfile        on;
+            keepalive_timeout  65;
+            include /etc/nginx/conf.d/*.conf;
+        }
+      ```
+  - On the nginx folder, run the command
+    ```bash
+    touch nginx.conf && sudo nano default.conf
+    ```
+    - paste the code below:
+      ```bash
+        server {
+            listen 80;
+            server_name _;
+
+            # --- SECURITY BLOCKS FIRST ---
+            # Block sensitive folders
+            location ~* /(app|vendor|storage|bootstrap|config|database|resources|routes|tests|node_modules|docker|data|stubs)/ {
+                deny all;
+                return 404;
+            }
+
+            # Block hidden files (.env, .git, etc.)
+            location ~ /\.(?!well-known).* {
+                deny all;
+            }
+
+            # Block PHP execution in uploads/storage
+            location ~* /(?:uploads|storage)/.*\.php$ {
+                deny all;
+            }
+
+            # Block /assets
+            location ~* ^/assets/ {
+                deny all;
+                return 404;
+            }
+
+            # Laravel application
+            location / {
+                try_files $uri $uri/ /index.php?$query_string;
+            }
+
+            # PHP-FPM for Laravel
+            location ~ \.php$ {
+                include fastcgi_params;
+                fastcgi_pass up_training:9000;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param PATH_INFO $fastcgi_path_info;
+
+                # PHP errors (optional)
+                # remove this on production
+                fastcgi_param PHP_VALUE "display_errors=1 \n error_reporting=E_ALL";
+
+                fastcgi_buffers 16 16k;
+                fastcgi_buffer_size 32k;
+            }
+        }
+      ```
+
+
+### Dockerhub
+- Signin to your dockerhub account. If you don't have an account yet, signup
+- Create a repository `up_training`
+- Grab your username and password, save it securely somewhere in your device
+
+
+### Github Secrets
+- Go to project settings and go to `Secrets and variables` > `Actions`
+- Click `New repository secret`, create everything below are the needed in our CI/CD
+- Enter name DOCKER_USER and secrets -> secrets will your dockerhub username
+- Enter name EC2_HOST and secrets -> secrets will be your server user
+- Enter name SSH_TEST_PRIVATE_KEY and secrets -> secrets will be your private SSH key
+
+- **Note** - If you don't have the ssh key, go to your server and run the code below
+  ```bash
+  cd ~/.ssh
+  ssh-keygen -t ed25519 -C "your_email@example.com"
+  cat id_ed25519.pub
+  ```
+  - copy the public key and add it to the `~/.ssh/authorized_keys`
+    ```bash
+    echo "PASTE_YOUR_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
+    ```
+  - if you cannot add, change the permission
+    ```bash
+    chmod 600 ~/.ssh/authorized_keys
+    ```
+  - copy your private key and add it to your github secrets `SSH_TEST_PRIVATE_KEY`
+    ```bash
+    cat id_ed25519
+    ```
+
+
+### Github Actions
+
+- Create `.github/workflows` on your project root directory
+- CD to `.github/workflows` and create `pull-request.yml`
+- Copy and paste below
+
+```yml
+name: Up Training CI Tests
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_test
+        options: >-
+          --health-cmd "mysqladmin ping -uroot -ppassword"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, pdo_mysql, curl, xml, zip
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Copy .env.example to .env
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Run migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: laravel_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: |
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..30}; do
+            if mysql -h 127.0.0.1 -P 3306 -u root -p password -e "SELECT 1;" >/dev/null 2>&1; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting..."
+            sleep 2
+          done
+          php artisan migrate --force
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: laravel_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan test
+
+```
+
+### Note: The reason we all this is to run the application test. To ensure that code is has no errors/bug before merging to the target branch
+
+- Create `test-deployment.yml`
+- Copy and paste below
+
+```yml
+name: UP Training Docker CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # ---------------------------------------------
+      # 1. Login to Docker Hub
+      # ---------------------------------------------
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      # ---------------------------------------------
+      # 2. Build Docker image
+      # ---------------------------------------------
+      - name: Build Docker image
+        run: |
+          echo ">> Building Docker image..."
+          docker compose -f docker-compose.prod.yml build
+
+      # -------------------------------
+      # 4. Tag Docker image with Git SHA
+      # -------------------------------
+      - name: Tag Docker image
+        run: |
+          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
+
+      # ---------------------------------------------
+      # 3. Push image to Docker Hub
+      # ---------------------------------------------
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USER }}/up_training:latest
+          docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+
+      # ---------------------------------------------
+      # 4. SSH into server and deploy
+      # ---------------------------------------------
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_TEST_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          if ! ssh-keygen -F ${{ secrets.EC2_HOST }} > /dev/null; then
+            echo "Adding ${{ secrets.EC2_HOST }} to known_hosts..."
+            ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          else
+            echo "${{ secrets.EC2_HOST }} already in known_hosts, skipping..."
+          fi
+
+      - name: Create .env file from single secret
+        run: |
+          echo "${{ secrets.ENV_VARIABLES }}" > .env
+
+      - name: Deploy to Server
+        run: |
+          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+
+            PROJECT_DIR="up-training"
+            REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
+
+            echo ">> Starting deployment..."
+
+            # -------------------------------
+            # 1. CHECK IF PROJECT FOLDER EXISTS
+            # -------------------------------
+            mkdir -p \$PROJECT_DIR
+            cd \$PROJECT_DIR
+
+            # Pull newest image
+            echo ">> Pulling latest Docker image..."
+            docker pull benjmasub/up_training:latest
+
+            # Remove existing container if it exists
+            docker rm -f up_training || true
+
+            # -------------------------------
+            # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
+            # -------------------------------
+            echo "🔍 Checking required Docker services..."
+            RESTART_NEEDED=false
+
+            for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
+              if ! docker ps --format '{{.Names}}' | grep -q "\$SERVICE"; then
+                echo ">> Missing service: \$SERVICE"
+                RESTART_NEEDED=true
+              else
+                echo ">> \$SERVICE is running"
+              fi
+            done
+
+            # -------------------------------
+            # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
+            # -------------------------------
+            if [ "\$RESTART_NEEDED" = true ]; then
+              echo ">> Restarting docker-compose because some services were missing..."
+              docker compose down || true
+              docker compose up -d --force-recreate --remove-orphans
+            else
+              echo ">> All required services are running."
+            fi
+
+            # Run container
+            docker run -d \
+              --name up_training \
+              --network up-training_up_training_network \
+              -p 9001:9000 \
+              --env-file .env \
+              benjmasub/up_training:latest
+
+            # -------------------------------
+            # 4. Restart Nginx if not running
+            # -------------------------------
+            NGINX_CONTAINER_NAME="up_training_nginx"
+
+            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+                echo ">> Nginx is not running. Starting nginx container..."
+                docker compose up -d nginx
+            else
+                echo ">> Nginx is already running."
+            fi
+
+            echo ">> Deployment completed!"
+          EOF
+```
+
+
+- ### **Note**: If your laravel app cannot connect to database run:
+  ```bash
+  docker exec -it up_training_db bash
+  mysql -u root -p # enter UP_trAining or use root if not allowed
+  ```
+  - create the user `admin_up_training_user`
+    ```bash
+    CREATE USER 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining';
+    ```
+  - if cannot create it may already exists
+    ```bash
+    ALTER USER 'admin_up_training_user'@'%' IDENTIFIED BY 'UP_trAining';
+    ```
+  - grant privilege to user `admin_up_training_user`
+    ```bash
+    GRANT ALL PRIVILEGES ON up_training.* TO 'admin_up_training_user'@'%';
+    ```
+  - then flush privilege
+    ```bash
+    FLUSH PRIVILEGES;
+    ```
