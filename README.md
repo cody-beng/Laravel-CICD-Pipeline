@@ -147,8 +147,8 @@ volumes:
     GRANT ALL PRIVILEGES ON up_training.* TO 'admin_up_training_user'@'%';
     FLUSH PRIVILEGES;
     ```
-  - To save, prese CTRL + X, then press Shift + Y, then press Enter
-  - create .env file inside mysql folder
+  - To save, press CTRL + X, then press Shift + Y, then press Enter
+  - create `.env` file inside mysql folder
     ```bash
     touch .env && sudo nano .env
     ```
@@ -269,7 +269,7 @@ volumes:
 ### Dockerhub
 - Signin to your dockerhub account. If you don't have an account yet, signup
 - Create a repository `up_training`
-- Grab your username and password, save it securely somewhere in your device
+- Grab your username and password, save it securely somewhere in your device or use token
 
 
 ### Github Secrets
@@ -279,7 +279,7 @@ volumes:
 - Enter name EC2_HOST and secrets -> secrets will be your server user
 - Enter name SSH_TEST_PRIVATE_KEY and secrets -> secrets will be your private SSH key
 
-- **Note** - If you don't have the ssh key, go to your server and run the code below
+- **Note** - If you forgot your ssh key during creation on the instance, go to your EC2 instance server and run the code below
   ```bash
   cd ~/.ssh
   ssh-keygen -t ed25519 -C "your_email@example.com"
@@ -383,11 +383,11 @@ jobs:
 
 ### Note: The reason we all this is to run the application test. To ensure that code is has no errors/bug before merging to the target branch
 
-- Create `test-deployment.yml`
+- Create `test-deployment.yml`. You can utilize this deployment for your production deployment.
 - Copy and paste below
 
 ```yml
-name: UP Training Docker CI/CD
+name: UP Training Docker Test Deployment
 
 on:
   push:
@@ -550,3 +550,141 @@ jobs:
     ```bash
     FLUSH PRIVILEGES;
     ```
+
+- Production deployment
+```yml
+name: UP Training Docker Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # ---------------------------------------------
+      # 1. Login to Docker Hub
+      # ---------------------------------------------
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      # ---------------------------------------------
+      # 2. Build Docker image
+      # ---------------------------------------------
+      - name: Build Docker image
+        run: |
+          echo ">> Building Docker image..."
+          docker compose -f docker-compose.prod.yml build
+
+      # -------------------------------
+      # 4. Tag Docker image with Git SHA
+      # -------------------------------
+      - name: Tag Docker image
+        run: |
+          docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
+
+      # ---------------------------------------------
+      # 3. Push image to Docker Hub
+      # ---------------------------------------------
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USER }}/up_training:latest
+          docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
+
+      # ---------------------------------------------
+      # 4. SSH into server and deploy
+      # ---------------------------------------------
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PROD_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          if ! ssh-keygen -F ${{ secrets.EC2_PROD_HOST }} > /dev/null; then
+            echo "Adding ${{ secrets.EC2_PROD_HOST }} to known_hosts..."
+            ssh-keyscan -H ${{ secrets.EC2_PROD_HOST }} >> ~/.ssh/known_hosts
+          else
+            echo "${{ secrets.EC2_PROD_HOST }} already in known_hosts, skipping..."
+          fi
+
+      - name: Deploy to Server
+        run: |
+          ssh -T ${{ secrets.EC2_PROD_USER }}@${{ secrets.EC2_PROD_HOST }} << EOF
+            set -e
+
+            PROJECT_DIR="up-training"
+            REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
+
+            echo ">> Starting deployment..."
+
+            # -------------------------------
+            # 1. CHECK IF PROJECT FOLDER EXISTS
+            # -------------------------------
+            mkdir -p \$PROJECT_DIR
+            cd \$PROJECT_DIR
+
+            # Pull newest image
+            echo ">> Pulling latest Docker image..."
+            docker pull benjmasub/up_training:latest
+
+            # Remove existing container if it exists
+            docker rm -f up_training || true
+
+            # -------------------------------
+            # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
+            # -------------------------------
+            echo "🔍 Checking required Docker services..."
+            RESTART_NEEDED=false
+
+            for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
+              if ! docker ps --format '{{.Names}}' | grep -q "\$SERVICE"; then
+                echo ">> Missing service: \$SERVICE"
+                RESTART_NEEDED=true
+              else
+                echo ">> \$SERVICE is running"
+              fi
+            done
+
+            # -------------------------------
+            # 3. IF ANY SERVICE MISSING → RESTART COMPOSE
+            # -------------------------------
+            if [ "\$RESTART_NEEDED" = true ]; then
+              echo ">> Restarting docker-compose because some services were missing..."
+              docker compose down || true
+              docker compose up -d --force-recreate --remove-orphans
+            else
+              echo ">> All required services are running."
+            fi
+
+            # Run container
+            docker run -d \
+              --name up_training \
+              --network up-training_up_training_network \
+              -p 9001:9000 \
+              benjmasub/up_training:latest
+
+            # -------------------------------
+            # 4. Restart Nginx if not running
+            # -------------------------------
+            NGINX_CONTAINER_NAME="up_training_nginx"
+
+            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+                echo ">> Nginx is not running. Starting nginx container..."
+                docker compose up -d nginx
+            else
+                echo ">> Nginx is already running."
+            fi
+
+            echo ">> Deployment completed!"
+          EOF
+```
