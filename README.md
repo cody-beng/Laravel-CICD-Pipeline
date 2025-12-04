@@ -72,7 +72,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    container_name: kreditinfo_nginx
+    container_name: up_training_nginx
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./public:/var/www/html
@@ -85,7 +85,7 @@ services:
 
   php:
     image: php:8.2-fpm
-    container_name: kreditinfo_php
+    container_name: up_training_php
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
@@ -96,18 +96,15 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: kreditinfo_db
+    container_name: up_training_db
     restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${adm1n_krEditInfo}
+    env_file:
+      - ./docker/mysql/.env
     command: --default-authentication-plugin=mysql_native_password
     ports:
       - "3306:3306"
     volumes:
-      - kreditinfo_data:/var/lib/mysql
+      - up_training_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -119,7 +116,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: kreditinfo_phpmyadmin
+    container_name: up_training_phpmyadmin
     restart: unless-stopped
     ports:
       - "8080:80"
@@ -136,22 +133,8 @@ networks:
   up_training_network:
 
 volumes:
-  kreditinfo_data:
+  up_training_data:
 ```
-
-### Create `.env` on the project root directory
-```bash
-touch .env && sudo nano .env
-```
-- copy and paste the environment variables. Your laravel important environment variable must goes here
-  ```text
-  DB_CONNECTION=mysql
-  DB_HOST=db
-  DB_PORT=3306
-  DB_DATABASE=up_training
-  DB_USERNAME=admin_up_training_user
-  DB_PASSWORD=UP_trAining
-  ```
 
 ### Create needed folders and configuration needed for the deployment
 - On your project folder run
