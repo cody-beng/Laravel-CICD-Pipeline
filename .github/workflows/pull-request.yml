@@ -1,72 +1,72 @@
-# name: UP Training Docker CI/CD
+name: UP Training Docker CI/CD
 
-# on:
-#   pull_request:
-#     branches:
-#       - develop
+on:
+  pull_request:
+    branches:
+      - develop
 
-# jobs:
-#   test:
-#     runs-on: ubuntu-latest
+jobs:
+  test:
+    runs-on: ubuntu-latest
 
-#     services:
-#       mysql:
-#         image: mysql:8.0
-#         ports:
-#           - 3306:3306
-#         env:
-#           MYSQL_ROOT_PASSWORD: password
-#           MYSQL_DATABASE: laravel_test
-#         options: >-
-#           --health-cmd "mysqladmin ping -uroot -ppassword"
-#           --health-interval 10s
-#           --health-timeout 5s
-#           --health-retries 3
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_test
+        options: >-
+          --health-cmd "mysqladmin ping -uroot -ppassword"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
 
-#     steps:
-#       - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-#       - name: Set up PHP
-#         uses: shivammathur/setup-php@v2
-#         with:
-#           php-version: '8.2'
-#           extensions: mbstring, bcmath, pdo_mysql, curl, xml, zip
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, pdo_mysql, curl, xml, zip
 
-#       - name: Install Composer dependencies
-#         run: composer install --prefer-dist --no-progress --no-suggest
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
 
-#       - name: Copy .env.example to .env
-#         run: cp .env.example .env
+      - name: Copy .env.example to .env
+        run: cp .env.example .env
 
-#       - name: Generate app key
-#         run: php artisan key:generate
+      - name: Generate app key
+        run: php artisan key:generate
 
-#       - name: Run migrations
-#         env:
-#           DB_CONNECTION: mysql
-#           DB_HOST: 127.0.0.1
-#           DB_PORT: 3306
-#           DB_DATABASE: laravel_test
-#           DB_USERNAME: root
-#           DB_PASSWORD: password
-#         run: |
-#           echo "Waiting for MySQL to be ready..."
-#           for i in {1..30}; do
-#             if mysql -h 127.0.0.1 -P 3306 -u root -p password -e "SELECT 1;" >/dev/null 2>&1; then
-#               echo "MySQL is ready!"
-#               break
-#             fi
-#             echo "Waiting..."
-#             sleep 2
-#           done
-#           php artisan migrate --force
+      - name: Run migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: laravel_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: |
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..30}; do
+            if mysql -h 127.0.0.1 -P 3306 -u root -p password -e "SELECT 1;" >/dev/null 2>&1; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting..."
+            sleep 2
+          done
+          php artisan migrate --force
 
-#       - name: Run tests
-#         env:
-#           DB_CONNECTION: mysql
-#           DB_HOST: 127.0.0.1
-#           DB_PORT: 3306
-#           DB_DATABASE: laravel_test
-#           DB_USERNAME: root
-#           DB_PASSWORD: password
-#         run: php artisan test
+      - name: Run tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: laravel_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan test
