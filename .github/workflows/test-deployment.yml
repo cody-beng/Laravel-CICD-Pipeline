@@ -116,7 +116,7 @@ jobs:
             # Run container
             echo \$SUDO_PASS | sudo -S sudo docker run -d \
               --name up_training \
-              --network up-training_up_training_network \
+              --network updx_up_training_network \
               -p 9001:9000 \
               benjmasub/up_training:latest
 
