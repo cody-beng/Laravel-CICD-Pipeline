@@ -257,6 +257,7 @@ volumes:
 - Enter name DOCKER_USER and secrets -> secrets will your dockerhub username
 - Enter name EC2_HOST and secrets -> secrets will be your server user
 - Enter name SSH_TEST_PRIVATE_KEY and secrets -> secrets will be your private SSH key
+- Enter name EC2_PASSWORD and secrets -> secrets will be your non-root user password
 
 - **Note** - If you forgot your ssh key during creation on the instance, go to your EC2 instance server and run the code below
   ```bash
@@ -675,7 +676,5 @@ jobs:
 - `docker stop <container-name-or-id>` use to stop a container
 - `docker image prune -a` use to remove unused images
 - `docker images -f "dangling=true"` use to remove dangling images that typically `<none>:<none>`
-
-
-
-
+- `docker network ls` use to display lists of networks
+- `docker network inspect <network_name>` use to check containers attached to the network
