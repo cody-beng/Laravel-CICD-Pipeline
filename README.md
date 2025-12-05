@@ -16,11 +16,20 @@
   - on the bottom right corner click "Lunch instance"
   - after successfully create lunch the instance from the success dialog
 
+
 ### Connect to EC2 instnce
 ```bash
 ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@ec2-[server_ip_address].ap-southeast-1.compute.amazonaws.com
 ```
 - ### **Note**: `ap-southeast-1` might differ from the region where your server is located.
+
+
+### Note: If your server is in-house, use the command below
+### Connect to your server, provide password if needed.
+```bash
+ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@server_ip_address
+```
+
 
 ### Install docker
 ```bash
