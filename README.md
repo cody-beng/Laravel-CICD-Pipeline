@@ -688,7 +688,11 @@ jobs:
           EOF
 ```
 
-### Debugging continers
-```bash
-docker logs <container-name>
-```
+### Usefull docker commands
+- `docker logs <container-name-or-id>` use to debug containers
+- `docker compose up -d` use to start services where `-d` detached after runing, meaning run on background
+- `docker compose up -d --build` use to build and start services
+- `docker restart <container-name-or-id>` use to restart a container
+- `docker stop <container-name-or-id>` use to stop a container
+
+
