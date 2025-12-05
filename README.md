@@ -83,19 +83,6 @@ services:
       - ./certbot/conf:/etc/letsencrypt
     networks:
       - up_training_network
-    depends_on:
-      - php
-
-  php:
-    image: php:8.2-fpm
-    container_name: up_training_php
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./:/var/www/html
-      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
-    networks:
-      - up_training_network
 
   db:
     image: mysql:8.0
