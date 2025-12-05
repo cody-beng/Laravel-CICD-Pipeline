@@ -1,4 +1,4 @@
-## **Github Actions with EC2 Instance**
+## **DevOps CI/CD using Github Actions with AWS EC2 via SSH**
 
 <img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/54e3de36-1215-4ca1-8281-16036c8c269c" />
 
