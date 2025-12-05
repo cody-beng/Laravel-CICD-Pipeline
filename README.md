@@ -16,11 +16,20 @@
   - on the bottom right corner click "Lunch instance"
   - after successfully create lunch the instance from the success dialog
 
+
 ### Connect to EC2 instnce
 ```bash
 ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@ec2-[server_ip_address].ap-southeast-1.compute.amazonaws.com
 ```
-- ### **Note**: `ap-southeast-1` might differ from the region where your server is located.
+- #### **Note**: `ap-southeast-1` might differ from the region where your server is located.
+---
+
+### Note: If your server is in-house, use the command below
+### Connect to your server, provide password if needed.
+```bash
+ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@server_ip_address
+```
+
 
 ### Install docker
 ```bash
@@ -30,6 +39,8 @@ sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker
   -o /usr/libexec/docker/cli-plugins/docker-compose
 sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 ```
+- #### **Note**: If your are using Ubuntu OS, use `apt-get` instead of `dnf`
+
 
 ### Start and enable docker
 ```bash
@@ -43,8 +54,10 @@ docker ps
 # you should see something like this
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
+- #### **Note**: If your are logged in as non-root user, use `sudo`
+---
 
-- Note: If you cannot run docker ps, run the command below
+### Note: If you cannot run docker ps, run the command below
 ```bash
 sudo usermod -aG docker $USER
 ```
@@ -257,6 +270,7 @@ volumes:
 - Enter name DOCKER_USER and secrets -> secrets will your dockerhub username
 - Enter name EC2_HOST and secrets -> secrets will be your server user
 - Enter name SSH_TEST_PRIVATE_KEY and secrets -> secrets will be your private SSH key
+- Enter name EC2_PASSWORD and secrets -> secrets will be your non-root user password
 
 - **Note** - If you forgot your ssh key during creation on the instance, go to your EC2 instance server and run the code below
   ```bash
@@ -364,6 +378,7 @@ jobs:
 
 - Create `test-deployment.yml`. You can utilize this deployment for your production deployment.
 - Copy and paste below
+- If you are logged in as root user remove `sshpass -p "${{ secrets.EC2_PASSWORD }}"`, `export SUDO_PASS="${{ secrets.EC2_PASSWORD }}"` and `echo \$SUDO_PASS | sudo -S sudo`
 
 ```yml
 name: UP Training Docker Test Deployment
@@ -432,8 +447,10 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+          sshpass -p "${{ secrets.EC2_PASSWORD }}" ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
+
+            export SUDO_PASS="${{ secrets.EC2_PASSWORD }}"
 
             PROJECT_DIR="up-training"
             REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
@@ -448,10 +465,10 @@ jobs:
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
-            docker pull benjmasub/up_training:latest
+            echo \$SUDO_PASS | sudo -S sudo docker pull benjmasub/up_training:latest
 
             # Remove existing container if it exists
-            docker rm -f up_training || true
+            echo \$SUDO_PASS | sudo -S sudo docker rm -f up_training || true
 
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
@@ -473,14 +490,14 @@ jobs:
             # -------------------------------
             if [ "\$RESTART_NEEDED" = true ]; then
               echo ">> Restarting docker-compose because some services were missing..."
-              docker compose down || true
-              docker compose up -d --force-recreate --remove-orphans
+              echo \$SUDO_PASS | sudo -S sudo docker compose down || true
+              echo \$SUDO_PASS | sudo -S sudo docker compose up -d --force-recreate --remove-orphans
             else
               echo ">> All required services are running."
             fi
 
             # Run container
-            docker run -d \
+            echo \$SUDO_PASS | sudo -S sudo docker run -d \
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
@@ -492,9 +509,9 @@ jobs:
             # -------------------------------
             NGINX_CONTAINER_NAME="up_training_nginx"
 
-            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+            if ! echo \$SUDO_PASS | sudo -S sudo docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
                 echo ">> Nginx is not running. Starting nginx container..."
-                docker compose up -d nginx
+                echo \$SUDO_PASS | sudo -S sudo docker compose up -d nginx
             else
                 echo ">> Nginx is already running."
             fi
@@ -670,5 +687,7 @@ jobs:
 - `docker compose up -d --build` use to build and start services
 - `docker restart <container-name-or-id>` use to restart a container
 - `docker stop <container-name-or-id>` use to stop a container
-
-
+- `docker image prune -a` use to remove unused images
+- `docker images -f "dangling=true"` use to remove dangling images that typically `<none>:<none>`
+- `docker network ls` use to display lists of networks
+- `docker network inspect <network_name>` use to check containers attached to the network
