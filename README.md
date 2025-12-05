@@ -687,3 +687,8 @@ jobs:
             echo ">> Deployment completed!"
           EOF
 ```
+
+### Debugging continers
+```bash
+docker logs <container-name>
+```
