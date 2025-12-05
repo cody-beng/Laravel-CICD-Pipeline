@@ -55,28 +55,28 @@ jobs:
 
       - name: Add server to known_hosts
         run: |
-          if ! ssh-keygen -F ${{ secrets.EC2_HOST }} > /dev/null; then
-            echo "Adding ${{ secrets.EC2_HOST }} to known_hosts..."
-            ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          if ! ssh-keygen -F ${{ secrets.EC2_HOST_IP }} > /dev/null; then
+            echo "Adding ${{ secrets.EC2_HOST_IP }} to known_hosts..."
+            ssh-keyscan -H ${{ secrets.EC2_HOST_IP }} >> ~/.ssh/known_hosts
           else
-            echo "${{ secrets.EC2_HOST }} already in known_hosts, skipping..."
+            echo "${{ secrets.EC2_HOST_IP }} already in known_hosts, skipping..."
           fi
 
       - name: Deploy to Server
         run: |
-          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_IP }} << EOF
             set -e
 
-            PROJECT_DIR="up-training"
-            REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
+            # PROJECT_DIR="up-training"
+            REQUIRED_SERVICES=("db" "phpmyadmin" "nginx")
 
             echo ">> Starting deployment..."
 
             # -------------------------------
             # 1. CHECK IF PROJECT FOLDER EXISTS
             # -------------------------------
-            mkdir -p \$PROJECT_DIR
-            cd \$PROJECT_DIR
+            # mkdir -p \$PROJECT_DIR
+            # cd \$PROJECT_DIR
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
