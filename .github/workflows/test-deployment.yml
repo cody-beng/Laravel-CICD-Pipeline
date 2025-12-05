@@ -80,10 +80,10 @@ jobs:
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
-            docker pull benjmasub/up_training:latest
+            sudo docker pull benjmasub/up_training:latest
 
             # Remove existing container if it exists
-            docker rm -f up_training || true
+            sudo docker rm -f up_training || true
 
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
@@ -105,14 +105,14 @@ jobs:
             # -------------------------------
             if [ "\$RESTART_NEEDED" = true ]; then
               echo ">> Restarting docker-compose because some services were missing..."
-              docker compose down || true
-              docker compose up -d --force-recreate --remove-orphans
+              sudo docker compose down || true
+              sudo docker compose up -d --force-recreate --remove-orphans
             else
               echo ">> All required services are running."
             fi
 
             # Run container
-            docker run -d \
+            sudo docker run -d \
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
@@ -125,7 +125,7 @@ jobs:
 
             if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
                 echo ">> Nginx is not running. Starting nginx container..."
-                docker compose up -d nginx
+                sudo docker compose up -d nginx
             else
                 echo ">> Nginx is already running."
             fi
