@@ -64,7 +64,7 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_IP }} << EOF
+          sshpass -p "${{ secrets.EC2_PASSWORD }}" ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_IP }} << EOF
             set -e
 
             # PROJECT_DIR="up-training"
