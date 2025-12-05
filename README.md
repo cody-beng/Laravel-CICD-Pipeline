@@ -22,7 +22,7 @@
 ssh -i "your_directory_to_pem/ssh_pem_file_name.pem" <host-user>@ec2-[server_ip_address].ap-southeast-1.compute.amazonaws.com
 ```
 - #### **Note**: `ap-southeast-1` might differ from the region where your server is located.
-------
+---
 
 ### Note: If your server is in-house, use the command below
 ### Connect to your server, provide password if needed.
@@ -39,6 +39,8 @@ sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker
   -o /usr/libexec/docker/cli-plugins/docker-compose
 sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 ```
+- #### **Note**: If your are using Ubuntu OS, use `apt-get` instead of `dnf`
+
 
 ### Start and enable docker
 ```bash
@@ -52,8 +54,10 @@ docker ps
 # you should see something like this
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
+- #### **Note**: If your are logged in as non-root user, use `sudo`
+---
 
-- Note: If you cannot run docker ps, run the command below
+### Note: If you cannot run docker ps, run the command below
 ```bash
 sudo usermod -aG docker $USER
 ```
