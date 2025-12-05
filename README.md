@@ -670,5 +670,9 @@ jobs:
 - `docker compose up -d --build` use to build and start services
 - `docker restart <container-name-or-id>` use to restart a container
 - `docker stop <container-name-or-id>` use to stop a container
+- `docker image prune -a` use to remove unused images
+- `docker images -f "dangling=true"` use to remove dangling images that typically `<none>:<none>`
+
+
 
 
