@@ -364,6 +364,7 @@ jobs:
 
 - Create `test-deployment.yml`. You can utilize this deployment for your production deployment.
 - Copy and paste below
+- If you are logged in as root user remove `sshpass -p "${{ secrets.EC2_PASSWORD }}"`, `export SUDO_PASS="${{ secrets.EC2_PASSWORD }}"` and `echo \$SUDO_PASS | sudo -S sudo`
 
 ```yml
 name: UP Training Docker Test Deployment
@@ -432,8 +433,10 @@ jobs:
 
       - name: Deploy to Server
         run: |
-          ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+          sshpass -p "${{ secrets.EC2_PASSWORD }}" ssh -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
+
+            export SUDO_PASS="${{ secrets.EC2_PASSWORD }}"
 
             PROJECT_DIR="up-training"
             REQUIRED_SERVICES=("php" "db" "phpmyadmin" "nginx")
@@ -448,10 +451,10 @@ jobs:
 
             # Pull newest image
             echo ">> Pulling latest Docker image..."
-            docker pull benjmasub/up_training:latest
+            echo \$SUDO_PASS | sudo -S sudo docker pull benjmasub/up_training:latest
 
             # Remove existing container if it exists
-            docker rm -f up_training || true
+            echo \$SUDO_PASS | sudo -S sudo docker rm -f up_training || true
 
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
@@ -473,14 +476,14 @@ jobs:
             # -------------------------------
             if [ "\$RESTART_NEEDED" = true ]; then
               echo ">> Restarting docker-compose because some services were missing..."
-              docker compose down || true
-              docker compose up -d --force-recreate --remove-orphans
+              echo \$SUDO_PASS | sudo -S sudo docker compose down || true
+              echo \$SUDO_PASS | sudo -S sudo docker compose up -d --force-recreate --remove-orphans
             else
               echo ">> All required services are running."
             fi
 
             # Run container
-            docker run -d \
+            echo \$SUDO_PASS | sudo -S sudo docker run -d \
               --name up_training \
               --network up-training_up_training_network \
               -p 9001:9000 \
@@ -492,9 +495,9 @@ jobs:
             # -------------------------------
             NGINX_CONTAINER_NAME="up_training_nginx"
 
-            if ! docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
+            if ! echo \$SUDO_PASS | sudo -S sudo docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER_NAME}$"; then
                 echo ">> Nginx is not running. Starting nginx container..."
-                docker compose up -d nginx
+                echo \$SUDO_PASS | sudo -S sudo docker compose up -d nginx
             else
                 echo ">> Nginx is already running."
             fi
@@ -670,5 +673,9 @@ jobs:
 - `docker compose up -d --build` use to build and start services
 - `docker restart <container-name-or-id>` use to restart a container
 - `docker stop <container-name-or-id>` use to stop a container
+- `docker image prune -a` use to remove unused images
+- `docker images -f "dangling=true"` use to remove dangling images that typically `<none>:<none>`
+
+
 
 
