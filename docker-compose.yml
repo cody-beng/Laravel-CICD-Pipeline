@@ -30,23 +30,12 @@ services:
       - app
       - php
 
-  php:
-    image: php:8.2-fpm
-    container_name: up_training_php
-    restart: unless-stopped
-    volumes:
-      - .:/var/www
-      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
-
   db:
     image: mysql:8.0
     container_name: up_training_db
     restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+    env_file:
+      - ./docker/mysql/.env
     command: --default-authentication-plugin=mysql_native_password
     ports:
       - "3307:3306"

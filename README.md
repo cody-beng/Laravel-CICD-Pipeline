@@ -1,10 +1,12 @@
-## **Github Actions with EC2 Instance**
+## **DevOps CI/CD using Github Actions with AWS EC2 via SSH**
+
+<img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/54e3de36-1215-4ca1-8281-16036c8c269c" />
 
 ### Create EC2 instance
 - Login to AWS console, If you don't have account yet, signup and use the Free Tier
 - Create EC2 instance
   - select "EC2" from home console
-  - on EC2 page, click "Lunch instance", then select "Lunch instance" from dropdown menu
+  - on EC2 page, click "Launch instance", then select "Launch instance" from dropdown menu
   - on lunch instance page, on "Name and tags" section, enter your instance name
   - on "Application and OS Images" section, select "Ubuntu" or "Linux"
   - check t2.micro if it is enough for you.
@@ -70,27 +72,15 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
     ports:
-      - "80:80"
-      - "443:443"
+      - "8000:80" # for laravel port
+      #-"80:80" # uncomment this if you want the laravel app to be accessable via port 80
+      #- "443:443" # uncomment this if you have SSL installed
     container_name: up_training_nginx
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./public:/var/www/html
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
-    networks:
-      - up_training_network
-    depends_on:
-      - php
-
-  php:
-    image: php:8.2-fpm
-    container_name: up_training_php
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./:/var/www/html
-      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
     networks:
       - up_training_network
 
@@ -158,17 +148,6 @@ volumes:
       MYSQL_USER=admin_up_training_user
       MYSQL_PASSWORD=UP_trAining
       MYSQL_ROOT_PASSWORD=UP_trAining
-      ```
-  - CD to docker root folder, run the command
-    ```bash
-    mkdir php && cd php && touch uploads.ini && sudo nano uploads.ini
-    ```
-    - paste the code below:
-      ```php
-      upload_max_filesize = 1024M
-      post_max_size = 1024M
-      memory_limit = 2048M
-      expose_php = Off
       ```
   - CD to docker root folder, run the command
     ```bash
@@ -381,7 +360,7 @@ jobs:
 
 ```
 
-### Note: The reason we all this is to run the application test. To ensure that code is has no errors/bug before merging to the target branch
+### Note: The reason for this `pull-request.yml` is to test the application to ensure that the code being pushed has no errors/bug before merging to the target branch
 
 - Create `test-deployment.yml`. You can utilize this deployment for your production deployment.
 - Copy and paste below
@@ -420,14 +399,14 @@ jobs:
           docker compose -f docker-compose.prod.yml build
 
       # -------------------------------
-      # 4. Tag Docker image with Git SHA
+      # 3. Tag Docker image with Git SHA
       # -------------------------------
       - name: Tag Docker image
         run: |
           docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
 
       # ---------------------------------------------
-      # 3. Push image to Docker Hub
+      # 4. Push image to Docker Hub
       # ---------------------------------------------
       - name: Push Docker image
         run: |
@@ -435,7 +414,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
-      # 4. SSH into server and deploy
+      # 5. SSH into server and deploy
       # ---------------------------------------------
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
@@ -445,15 +424,11 @@ jobs:
       - name: Add server to known_hosts
         run: |
           if ! ssh-keygen -F ${{ secrets.EC2_HOST }} > /dev/null; then
-            echo "Adding ${{ secrets.EC2_HOST }} to known_hosts..."
+            echo ">> Adding to known_hosts..."
             ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
           else
-            echo "${{ secrets.EC2_HOST }} already in known_hosts, skipping..."
+            echo ">> Already in known_hosts, skipping..."
           fi
-
-      - name: Create .env file from single secret
-        run: |
-          echo "${{ secrets.ENV_VARIABLES }}" > .env
 
       - name: Deploy to Server
         run: |
@@ -481,7 +456,7 @@ jobs:
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
             # -------------------------------
-            echo "🔍 Checking required Docker services..."
+            echo ">> Checking required Docker services..."
             RESTART_NEEDED=false
 
             for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
@@ -586,14 +561,14 @@ jobs:
           docker compose -f docker-compose.prod.yml build
 
       # -------------------------------
-      # 4. Tag Docker image with Git SHA
+      # 3. Tag Docker image with Git SHA
       # -------------------------------
       - name: Tag Docker image
         run: |
           docker tag ${{ secrets.DOCKER_USER }}/up_training:latest ${{ secrets.DOCKER_USER }}/up_training:${GITHUB_SHA}
 
       # ---------------------------------------------
-      # 3. Push image to Docker Hub
+      # 4. Push image to Docker Hub
       # ---------------------------------------------
       - name: Push Docker image
         run: |
@@ -601,7 +576,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USER }}/up_training:${{ github.sha }}
 
       # ---------------------------------------------
-      # 4. SSH into server and deploy
+      # 5. SSH into server and deploy
       # ---------------------------------------------
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
@@ -611,10 +586,10 @@ jobs:
       - name: Add server to known_hosts
         run: |
           if ! ssh-keygen -F ${{ secrets.EC2_PROD_HOST }} > /dev/null; then
-            echo "Adding ${{ secrets.EC2_PROD_HOST }} to known_hosts..."
+            echo ">> Adding to known_hosts..."
             ssh-keyscan -H ${{ secrets.EC2_PROD_HOST }} >> ~/.ssh/known_hosts
           else
-            echo "${{ secrets.EC2_PROD_HOST }} already in known_hosts, skipping..."
+            echo ">> Already in known_hosts, skipping..."
           fi
 
       - name: Deploy to Server
@@ -643,7 +618,7 @@ jobs:
             # -------------------------------
             # 2. CHECK IF REQUIRED SERVICES ARE RUNNING
             # -------------------------------
-            echo "🔍 Checking required Docker services..."
+            echo ">> Checking required Docker services..."
             RESTART_NEEDED=false
 
             for SERVICE in "\${REQUIRED_SERVICES[@]}"; do
@@ -688,3 +663,12 @@ jobs:
             echo ">> Deployment completed!"
           EOF
 ```
+
+### Usefull docker commands
+- `docker logs <container-name-or-id>` use to debug containers
+- `docker compose up -d` use to start services where `-d` detached after runing, meaning run on background
+- `docker compose up -d --build` use to build and start services
+- `docker restart <container-name-or-id>` use to restart a container
+- `docker stop <container-name-or-id>` use to stop a container
+
+
